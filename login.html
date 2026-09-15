@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso - Somos Perú</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <main class="contenedor" style="margin-top: 5vh;">
+        <header class="cabecera">
+            <h1>Acceso de Personeros</h1>
+            <h2>Partido Democrático Somos Perú</h2>
+        </header>
+
+        <form id="formLogin">
+            <div class="grupo-campo">
+                <label for="dni">Número de DNI:</label>
+                <!-- pattern obliga a que el celular muestre teclado numérico -->
+                <input type="number" id="dni" name="dni" required placeholder="Ingresa tu DNI" pattern="\d*">
+            </div>
+
+            <div class="grupo-campo">
+                <label for="password">Contraseña:</label>
+                <input type="password" id="password" name="password" required placeholder="Tu contraseña asignada">
+            </div>
+
+            <button type="submit" id="btnIngresar" class="btn-principal">
+                Ingresar al Sistema
+            </button>
+            
+            <div id="mensajeLogin" style="margin-top: 15px; text-align: center; padding: 10px; border-radius: 6px; display: none; font-weight: bold;"></div>
+        </form>
+    </main>
+
+    <script src="js/login.js"></script>
+</body>
+</html>
