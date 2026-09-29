@@ -1,9 +1,173 @@
-.logo-partido { width: 80px; height: auto; margin: 0 auto 15px auto; display: block; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
-.pantalla-login { min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: var(--color-primario); }
-.pantalla-login .contenedor { margin: 0; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); border-top: 5px solid var(--color-secundario); }
+/* =================================
+   PANTALLA LOGIN
+================================= */
 
-/* Inputs genéricos del formulario */
-.grupo-campo { margin-bottom: 20px; }
-label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem; }
-input { width: 100%; padding: 14px; border: 1px solid var(--borde); border-radius: var(--radio-borde); font-size: 16px; background: #f8fafc; transition: 0.3s; }
-input:focus { outline: none; border-color: var(--color-primario); background: var(--bg-tarjeta); box-shadow: 0 0 0 3px rgba(0,51,102,0.15); }
+.pantalla-login {
+    min-height: 100vh;
+
+    min-height: 100dvh;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #003366 0%,
+            #001f3f 100%
+        );
+}
+
+/* =================================
+   TARJETA LOGIN
+================================= */
+
+.pantalla-login .contenedor {
+    width: min(100%, 440px);
+
+    margin: 0;
+
+    border-top: 5px solid var(--color-secundario);
+
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.30);
+}
+
+/* =================================
+   CABECERA
+================================= */
+
+.pantalla-login .cabecera {
+    text-align: center;
+
+    margin-bottom: 25px;
+}
+
+.pantalla-login .cabecera h1 {
+    color: var(--color-primario);
+
+    font-size: clamp(1.25rem, 4vw, 1.6rem);
+
+    margin-bottom: 5px;
+}
+
+.pantalla-login .cabecera h2 {
+    color: var(--color-secundario);
+
+    font-size: clamp(0.85rem, 3vw, 1rem);
+}
+
+.logo-partido {
+    width: clamp(65px, 20vw, 90px);
+
+    height: auto;
+
+    margin: 0 auto 15px;
+
+    display: block;
+
+    filter: drop-shadow(
+        0 4px 6px rgba(0, 0, 0, 0.12)
+    );
+}
+
+/* =================================
+   CAMPOS
+================================= */
+
+.grupo-campo {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+
+    font-weight: 600;
+
+    margin-bottom: 8px;
+
+    font-size: 0.95rem;
+}
+
+input {
+    width: 100%;
+
+    min-height: 48px;
+
+    padding: 13px 14px;
+
+    border: 1px solid var(--borde);
+
+    border-radius: var(--radio-borde);
+
+    font-size: 16px;
+
+    background: #f8fafc;
+
+    transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+input:focus {
+    outline: none;
+
+    border-color: var(--color-primario);
+
+    background: var(--bg-tarjeta);
+
+    box-shadow:
+        0 0 0 3px rgba(0, 51, 102, 0.15);
+}
+
+/* =================================
+   CELULAR
+================================= */
+
+@media (max-width: 480px) {
+
+    .pantalla-login {
+        padding: 12px;
+
+        align-items: center;
+    }
+
+    .pantalla-login .contenedor {
+        width: 100%;
+
+        padding: 20px 18px;
+    }
+
+    .logo-partido {
+        width: 65px;
+
+        margin-bottom: 10px;
+    }
+
+    .grupo-campo {
+        margin-bottom: 16px;
+    }
+
+}
+
+/* =================================
+   PANTALLAS BAJAS
+================================= */
+
+@media (max-height: 600px) {
+
+    .pantalla-login {
+        align-items: flex-start;
+
+        padding-top: 20px;
+
+        padding-bottom: 20px;
+    }
+
+}

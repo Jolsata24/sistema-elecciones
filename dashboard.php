@@ -1,173 +1,1045 @@
 <?php
+
 session_start();
+
 require_once 'api/conexion.php';
 
-// 1. DOBLE BARRERA DE SEGURIDAD
-// Verificamos que esté logueado Y que sea administrador
-if (!isset($_SESSION['usuario_id']) || $_SESSION['rol'] !== 'admin') {
+
+/* =========================================================
+   VALIDAR SESIÓN Y ROL
+========================================================= */
+
+if (
+    !isset($_SESSION['usuario_id']) ||
+    !isset($_SESSION['rol']) ||
+    $_SESSION['rol'] !== 'admin'
+) {
+
     header("Location: login.html");
     exit;
 }
 
-// 2. CONSULTAS PARA LOS INDICADORES GLOBALES (KPIs)
-try {
-    // Calcular el total de votos acumulados
-    $stmtTotales = $pdo->query("SELECT 
-        SUM(votos_somos_peru) as total_sp, 
-        SUM(votos_blancos) as total_blancos, 
-        SUM(votos_nulos) as total_nulos,
-        COUNT(mesa_id) as mesas_escrutadas
-        FROM resultado");
-    $totales = $stmtTotales->fetch();
 
-    // 3. CONSULTA PARA LA TABLA DE MESAS
-    $stmtMesas = $pdo->query("SELECT r.*, u.nombres as personero 
-                              FROM resultado r 
-                              LEFT JOIN usuario u ON u.id = r.mesa_id 
-                              ORDER BY r.fecha_registro DESC");
-    $mesas = $stmtMesas->fetchAll();
+/* =========================================================
+   OBTENER TOTALES
+========================================================= */
 
-} catch (PDOException $e) {
-    die("Error al cargar los datos: " . $e->getMessage());
+$stmtTotales = $pdo->query("
+    SELECT
+
+        COUNT(*) AS mesas_registradas,
+
+        COALESCE(
+            SUM(votos_somos_peru),
+            0
+        ) AS total_sp,
+
+        COALESCE(
+            SUM(votos_blancos),
+            0
+        ) AS total_blancos,
+
+        COALESCE(
+            SUM(votos_nulos),
+            0
+        ) AS total_nulos,
+
+        COALESCE(
+            SUM(
+                votos_somos_peru
+                +
+                votos_blancos
+                +
+                votos_nulos
+            ),
+            0
+        ) AS total_votos
+
+    FROM resultado
+");
+
+
+$totales = $stmtTotales->fetch();
+
+
+/* =========================================================
+   VARIABLES DE INDICADORES
+========================================================= */
+
+$mesasRegistradas =
+    (int) ($totales['mesas_registradas'] ?? 0);
+
+$totalSomosPeru =
+    (int) ($totales['total_sp'] ?? 0);
+
+$totalBlancos =
+    (int) ($totales['total_blancos'] ?? 0);
+
+$totalNulos =
+    (int) ($totales['total_nulos'] ?? 0);
+
+$totalVotos =
+    (int) ($totales['total_votos'] ?? 0);
+
+
+/* =========================================================
+   CALCULAR PORCENTAJE
+========================================================= */
+
+$porcentajeSomosPeru = 0;
+
+if ($totalVotos > 0) {
+
+    $porcentajeSomosPeru =
+        ($totalSomosPeru / $totalVotos) * 100;
 }
-?>
 
+
+/* =========================================================
+   OBTENER ACTAS / MESAS
+========================================================= */
+
+$stmtMesas = $pdo->query("
+    SELECT
+
+        id,
+        mesa_id,
+        region,
+        provincia,
+        distrito,
+        votos_somos_peru,
+        votos_blancos,
+        votos_nulos,
+        foto_acta_url,
+        fecha_registro
+
+    FROM resultado
+
+    ORDER BY fecha_registro DESC
+");
+
+
+$mesas = $stmtMesas->fetchAll();
+
+?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Centro de Cómputo - Admin</title>
-    <link rel="stylesheet" href="css/global.css">
-    <link rel="stylesheet" href="css/dashboard.css">
-    <!-- Estilos específicos para el dashboard -->
 
-    <!-- Importar GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Dashboard - Transmisión de Actas
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="css/global.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="css/dashboard.css"
+    >
+
 </head>
+
+
 <body>
-    <div class="dashboard-container">
-        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+
+
+<!-- =====================================================
+     CABECERA
+===================================================== -->
+
+<header class="dashboard-header">
+
+    <div>
+
+        <h1>
+            Dashboard de Resultados
+        </h1>
+
+        <p>
+            Información registrada mediante las actas ingresadas al sistema
+        </p>
+
+    </div>
+
+
+    <div>
+
+        <span class="usuario-admin">
+
+            <?php
+            echo htmlspecialchars(
+                $_SESSION['nombres'] ?? 'Administrador'
+            );
+            ?>
+
+        </span>
+
+
+        <a
+            href="api/logout.php"
+            class="enlace-salir"
+        >
+            Cerrar sesión
+        </a>
+
+    </div>
+
+</header>
+
+
+
+<main class="dashboard-container">
+
+
+    <!-- =================================================
+         INDICADORES PRINCIPALES
+    ================================================== -->
+
+    <section class="kpi-grid">
+
+
+        <!-- TOTAL DE VOTOS -->
+
+        <article class="kpi-card">
+
+            <h3>
+                Total votos registrados
+            </h3>
+
+
+            <div class="numero">
+
+                <?php
+                echo number_format(
+                    $totalVotos,
+                    0,
+                    ',',
+                    '.'
+                );
+                ?>
+
+            </div>
+
+
+            <small>
+                Total digitado en las actas registradas
+            </small>
+
+        </article>
+
+
+
+        <!-- VOTOS SOMOS PERÚ -->
+
+        <article class="kpi-card">
+
+            <h3>
+                Votos Somos Perú
+            </h3>
+
+
+            <div class="numero">
+
+                <?php
+                echo number_format(
+                    $totalSomosPeru,
+                    0,
+                    ',',
+                    '.'
+                );
+                ?>
+
+            </div>
+
+
+            <small>
+                Acumulado registrado en el sistema
+            </small>
+
+        </article>
+
+
+
+        <!-- PORCENTAJE -->
+
+        <article class="kpi-card porcentaje">
+
+            <h3>
+                % sobre votos registrados
+            </h3>
+
+
+            <div class="numero">
+
+                <?php
+                echo number_format(
+                    $porcentajeSomosPeru,
+                    2,
+                    ',',
+                    '.'
+                );
+                ?>%
+
+            </div>
+
+
+            <div class="barra-porcentaje">
+
+                <div
+                    class="barra-progreso"
+                    style="
+                        width:
+                        <?php
+                        echo min(
+                            100,
+                            max(
+                                0,
+                                $porcentajeSomosPeru
+                            )
+                        );
+                        ?>%;
+                    "
+                ></div>
+
+            </div>
+
+
+            <small>
+                Votos Somos Perú respecto al total registrado
+            </small>
+
+        </article>
+
+
+
+        <!-- MESAS -->
+
+        <article class="kpi-card rojo">
+
+            <h3>
+                Mesas registradas
+            </h3>
+
+
+            <div class="numero">
+
+                <?php
+                echo number_format(
+                    $mesasRegistradas,
+                    0,
+                    ',',
+                    '.'
+                );
+                ?>
+
+            </div>
+
+
+            <small>
+                Actas ingresadas al sistema
+            </small>
+
+        </article>
+
+
+    </section>
+
+
+
+    <!-- =================================================
+         INDICADORES SECUNDARIOS
+    ================================================== -->
+
+    <section class="kpi-secundarios">
+
+
+        <div class="mini-kpi">
+
+            <span>
+                Votos en blanco
+            </span>
+
+            <strong>
+
+                <?php
+                echo number_format(
+                    $totalBlancos,
+                    0,
+                    ',',
+                    '.'
+                );
+                ?>
+
+            </strong>
+
+        </div>
+
+
+
+        <div class="mini-kpi">
+
+            <span>
+                Votos nulos
+            </span>
+
+            <strong>
+
+                <?php
+                echo number_format(
+                    $totalNulos,
+                    0,
+                    ',',
+                    '.'
+                );
+                ?>
+
+            </strong>
+
+        </div>
+
+
+
+        <div class="mini-kpi">
+
+            <span>
+                Blancos + nulos
+            </span>
+
+            <strong>
+
+                <?php
+                echo number_format(
+                    $totalBlancos + $totalNulos,
+                    0,
+                    ',',
+                    '.'
+                );
+                ?>
+
+            </strong>
+
+        </div>
+
+
+    </section>
+
+
+
+    <!-- =================================================
+         CABECERA TABLA
+    ================================================== -->
+
+    <section class="seccion-tabla">
+
+
+        <div class="cabecera-tabla">
+
             <div>
-                <h1 style="color: #003366;">Panel de Control Administrativo</h1>
-                <p>Bienvenido, <?php echo htmlspecialchars($_SESSION['nombres']); ?></p>
-            </div>
-            <a href="api/logout.php" style="color: #cc0000; font-weight: bold; text-decoration: none;">Cerrar Sesión</a>
-        </header>
 
-        <!-- Indicadores Principales -->
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <h3>VOTOS SOMOS PERÚ</h3>
-                <div class="numero"><?php echo $totales['total_sp'] ?? 0; ?></div>
-            </div>
-            <div class="kpi-card">
-                <h3>VOTOS BLANCOS</h3>
-                <div class="numero"><?php echo $totales['total_blancos'] ?? 0; ?></div>
-            </div>
-            <div class="kpi-card">
-                <h3>VOTOS NULOS</h3>
-                <div class="numero"><?php echo $totales['total_nulos'] ?? 0; ?></div>
-            </div>
-            <div class="kpi-card rojo">
-                <h3>MESAS PROCESADAS</h3>
-                <div class="numero"><?php echo $totales['mesas_escrutadas'] ?? 0; ?></div>
-            </div>
-        </div>
+                <h2>
+                    Actas registradas
+                </h2>
 
-        <!-- Grilla de Datos -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h2 style="margin: 0;">Actas Recibidas</h2>
-            <a href="api/exportar_excel.php" style="background-color: #107c41; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 0.9rem;">
-                📥 Exportar a Excel
+                <p>
+                    Detalle de la información ingresada por mesa
+                </p>
+
+            </div>
+
+
+            <a
+                href="api/exportar_excel.php"
+                class="btn-exportar"
+            >
+                Exportar Excel
             </a>
+
         </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Mesa N°</th>
-                    <th>Somos Perú</th>
-                    <th>Blancos</th>
-                    <th>Nulos</th>
-                    <th>Fecha / Hora</th>
-                    <th>Evidencia</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach($mesas as $mesa): ?>
-                <tr>
-                    <td><strong><?php echo htmlspecialchars($mesa['mesa_id']); ?></strong></td>
-                    <td><?php echo htmlspecialchars($mesa['votos_somos_peru']); ?></td>
-                    <td><?php echo htmlspecialchars($mesa['votos_blancos']); ?></td>
-                    <td><?php echo htmlspecialchars($mesa['votos_nulos']); ?></td>
-                    <td><?php echo date('d/m/Y H:i', strtotime($mesa['fecha_registro'])); ?></td>
-                    <td>
-                        <a href="<?php echo htmlspecialchars($mesa['foto_acta_url']); ?>" target="_blank" class="btn-ver">Ver Acta</a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-                
-                <?php if(empty($mesas)): ?>
-                <tr>
-                    <td colspan="6" style="text-align: center; color: #a0aec0;">Aún no se han recibido actas.</td>
-                </tr>
+
+
+
+        <!-- =================================================
+             TABLA
+        ================================================== -->
+
+        <div class="tabla-responsiva">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Mesa
+                        </th>
+
+                        <th>
+                            Región
+                        </th>
+
+                        <th>
+                            Provincia
+                        </th>
+
+                        <th>
+                            Distrito
+                        </th>
+
+                        <th>
+                            Somos Perú
+                        </th>
+
+                        <th>
+                            Blancos
+                        </th>
+
+                        <th>
+                            Nulos
+                        </th>
+
+                        <th>
+                            Total
+                        </th>
+
+                        <th>
+                            % SP
+                        </th>
+
+                        <th>
+                            Fecha
+                        </th>
+
+                        <th>
+                            Evidencia
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+
+                <?php if (!empty($mesas)): ?>
+
+
+                    <?php foreach ($mesas as $mesa): ?>
+
+
+                        <?php
+
+                        /*
+                        Total registrado en esta mesa
+                        */
+
+                        $totalMesa =
+                            (int) $mesa['votos_somos_peru']
+                            +
+                            (int) $mesa['votos_blancos']
+                            +
+                            (int) $mesa['votos_nulos'];
+
+
+                        /*
+                        Porcentaje SP en esta mesa
+                        */
+
+                        $porcentajeMesa = 0;
+
+
+                        if ($totalMesa > 0) {
+
+                            $porcentajeMesa =
+                                (
+                                    (int) $mesa['votos_somos_peru']
+                                    /
+                                    $totalMesa
+                                )
+                                * 100;
+                        }
+
+                        ?>
+
+
+                        <tr>
+
+
+                            <!-- MESA -->
+
+                            <td>
+
+                                <strong>
+
+                                    <?php
+                                    echo htmlspecialchars(
+                                        (string) $mesa['mesa_id']
+                                    );
+                                    ?>
+
+                                </strong>
+
+                            </td>
+
+
+
+                            <!-- REGIÓN -->
+
+                            <td>
+
+                                <?php
+                                echo htmlspecialchars(
+                                    $mesa['region']
+                                );
+                                ?>
+
+                            </td>
+
+
+
+                            <!-- PROVINCIA -->
+
+                            <td>
+
+                                <?php
+                                echo htmlspecialchars(
+                                    $mesa['provincia']
+                                );
+                                ?>
+
+                            </td>
+
+
+
+                            <!-- DISTRITO -->
+
+                            <td>
+
+                                <?php
+                                echo htmlspecialchars(
+                                    $mesa['distrito']
+                                );
+                                ?>
+
+                            </td>
+
+
+
+                            <!-- SOMOS PERÚ -->
+
+                            <td>
+
+                                <strong>
+
+                                    <?php
+                                    echo number_format(
+                                        (int) $mesa['votos_somos_peru'],
+                                        0,
+                                        ',',
+                                        '.'
+                                    );
+                                    ?>
+
+                                </strong>
+
+                            </td>
+
+
+
+                            <!-- BLANCOS -->
+
+                            <td>
+
+                                <?php
+                                echo number_format(
+                                    (int) $mesa['votos_blancos'],
+                                    0,
+                                    ',',
+                                    '.'
+                                );
+                                ?>
+
+                            </td>
+
+
+
+                            <!-- NULOS -->
+
+                            <td>
+
+                                <?php
+                                echo number_format(
+                                    (int) $mesa['votos_nulos'],
+                                    0,
+                                    ',',
+                                    '.'
+                                );
+                                ?>
+
+                            </td>
+
+
+
+                            <!-- TOTAL -->
+
+                            <td>
+
+                                <strong>
+
+                                    <?php
+                                    echo number_format(
+                                        $totalMesa,
+                                        0,
+                                        ',',
+                                        '.'
+                                    );
+                                    ?>
+
+                                </strong>
+
+                            </td>
+
+
+
+                            <!-- PORCENTAJE -->
+
+                            <td>
+
+                                <span class="porcentaje-mesa">
+
+                                    <?php
+                                    echo number_format(
+                                        $porcentajeMesa,
+                                        2,
+                                        ',',
+                                        '.'
+                                    );
+                                    ?>%
+
+                                </span>
+
+                            </td>
+
+
+
+                            <!-- FECHA -->
+
+                            <td>
+
+                                <?php
+
+                                if (!empty($mesa['fecha_registro'])) {
+
+                                    echo date(
+                                        'd/m/Y H:i',
+                                        strtotime(
+                                            $mesa['fecha_registro']
+                                        )
+                                    );
+
+                                } else {
+
+                                    echo '-';
+
+                                }
+
+                                ?>
+
+                            </td>
+
+
+
+                            <!-- EVIDENCIA -->
+
+                            <td>
+
+
+                                <?php if (!empty($mesa['foto_acta_url'])): ?>
+
+
+                                    <button
+                                        type="button"
+                                        class="btn-ver"
+                                        data-imagen="<?php
+                                            echo htmlspecialchars(
+                                                $mesa['foto_acta_url'],
+                                                ENT_QUOTES,
+                                                'UTF-8'
+                                            );
+                                        ?>"
+                                        data-mesa="<?php
+                                            echo htmlspecialchars(
+                                                (string) $mesa['mesa_id'],
+                                                ENT_QUOTES,
+                                                'UTF-8'
+                                            );
+                                        ?>"
+                                    >
+                                        Ver Acta
+                                    </button>
+
+
+                                <?php else: ?>
+
+
+                                    <span>
+                                        Sin evidencia
+                                    </span>
+
+
+                                <?php endif; ?>
+
+
+                            </td>
+
+
+                        </tr>
+
+
+                    <?php endforeach; ?>
+
+
+                <?php else: ?>
+
+
+                    <tr>
+
+                        <td
+                            colspan="11"
+                            class="sin-registros"
+                        >
+
+                            Aún no se han registrado actas.
+
+                        </td>
+
+                    </tr>
+
+
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-    <!-- Ventana Modal Oculta -->
-    <div id="modalOverlay" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="margin-bottom: 15px; color: #003366;">Evidencia Fotográfica</h3>
-            <!-- La imagen se inyectará aquí dinámicamente con JS -->
-            <img id="imagenActa" src="" alt="Fotografía del Acta">
-            <button id="btnCerrarModal" class="btn-cerrar-modal">Cerrar Visualizador</button>
+
+
+                </tbody>
+
+            </table>
+
         </div>
+
+    </section>
+
+
+</main>
+
+
+
+<!-- =====================================================
+     MODAL PARA VER ACTA
+===================================================== -->
+
+<div
+    id="modalActa"
+    class="modal"
+    aria-hidden="true"
+>
+
+
+    <div class="modal-contenido">
+
+
+        <button
+            type="button"
+            class="modal-cerrar"
+            id="cerrarModal"
+            aria-label="Cerrar"
+        >
+            ×
+        </button>
+
+
+        <div class="modal-header">
+
+            <h2>
+                Evidencia del Acta
+            </h2>
+
+            <p id="modalMesa">
+                Mesa
+            </p>
+
+        </div>
+
+
+        <div class="modal-imagen">
+
+            <img
+                id="imagenActa"
+                src=""
+                alt="Fotografía del acta"
+            >
+
+        </div>
+
+
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const botonesVer = document.querySelectorAll('.btn-ver');
-            const modal = document.getElementById('modalOverlay');
-            const imagenModal = document.getElementById('imagenActa');
-            const btnCerrar = document.getElementById('btnCerrarModal');
+</div>
 
-            // Abrir modal
-            botonesVer.forEach(boton => {
-                boton.addEventListener('click', (e) => {
-                    e.preventDefault(); // Evita que el navegador abra una pestaña nueva
-                    
-                    // Extraer la ruta de la imagen del atributo href
-                    const urlImagen = boton.getAttribute('href');
-                    imagenModal.src = urlImagen;
 
-                    // Animación de entrada con GSAP
-                    gsap.to(modal, { autoAlpha: 1, duration: 0.3 }); // Aparece el fondo oscuro
-                    gsap.fromTo('.modal-content', 
-                        { scale: 0.7, y: 30, opacity: 0 }, 
-                        { scale: 1, y: 0, opacity: 1, duration: 0.5, ease: "back.out(1.5)" }
-                    ); // Efecto de rebote sutil en la tarjeta
-                });
+
+<script>
+
+/* =========================================================
+   MODAL DE ACTA
+========================================================= */
+
+document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+
+        const modal =
+            document.getElementById(
+                'modalActa'
+            );
+
+        const imagen =
+            document.getElementById(
+                'imagenActa'
+            );
+
+        const modalMesa =
+            document.getElementById(
+                'modalMesa'
+            );
+
+        const cerrar =
+            document.getElementById(
+                'cerrarModal'
+            );
+
+
+        /*
+        Abrir modal
+        */
+
+        document
+            .querySelectorAll('.btn-ver')
+            .forEach(boton => {
+
+                boton.addEventListener(
+                    'click',
+                    () => {
+
+                        imagen.src =
+                            boton.dataset.imagen;
+
+                        modalMesa.textContent =
+                            'Mesa ' +
+                            boton.dataset.mesa;
+
+                        modal.classList.add(
+                            'activo'
+                        );
+
+                        modal.setAttribute(
+                            'aria-hidden',
+                            'false'
+                        );
+
+                        document.body.style.overflow =
+                            'hidden';
+
+                    }
+                );
+
             });
 
-            // Función para cerrar animado
-            const cerrarModal = () => {
-                gsap.to('.modal-content', { scale: 0.8, y: 20, opacity: 0, duration: 0.2, ease: "power2.in" });
-                gsap.to(modal, { autoAlpha: 0, duration: 0.3, delay: 0.1 }); // Se desvanece
-                
-                // Limpiar la imagen después de la animación para ahorrar memoria
-                setTimeout(() => { imagenModal.src = ''; }, 400);
-            };
 
-            // Eventos de cierre
-            btnCerrar.addEventListener('click', cerrarModal);
-            
-            // Cerrar también si el administrador hace clic fuera del recuadro blanco
-            modal.addEventListener('click', (e) => {
-                if(e.target === modal) cerrarModal();
-            });
-        });
-    </script>
+        /*
+        Cerrar
+        */
+
+        function cerrarModal() {
+
+            modal.classList.remove(
+                'activo'
+            );
+
+            modal.setAttribute(
+                'aria-hidden',
+                'true'
+            );
+
+            imagen.src = '';
+
+            document.body.style.overflow =
+                '';
+
+        }
+
+
+        cerrar.addEventListener(
+            'click',
+            cerrarModal
+        );
+
+
+        /*
+        Cerrar pulsando fondo
+        */
+
+        modal.addEventListener(
+            'click',
+            (event) => {
+
+                if (event.target === modal) {
+
+                    cerrarModal();
+
+                }
+
+            }
+        );
+
+
+        /*
+        Cerrar con ESC
+        */
+
+        document.addEventListener(
+            'keydown',
+            (event) => {
+
+                if (
+                    event.key === 'Escape' &&
+                    modal.classList.contains(
+                        'activo'
+                    )
+                ) {
+
+                    cerrarModal();
+
+                }
+
+            }
+        );
+
+    }
+);
+
+</script>
+
+
 </body>
 </html>
