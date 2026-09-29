@@ -1,0 +1,20 @@
+:root {
+    --color-primario: #003366; 
+    --color-secundario: #cc0000; 
+    --bg-fondo: #f4f7f9;
+    --bg-tarjeta: #ffffff;
+    --texto-principal: #1e293b;
+    --texto-secundario: #64748b;
+    --borde: #cbd5e1;
+    --radio-borde: 8px;
+    --sombra-suave: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg-fondo); color: var(--texto-principal); padding: 15px; }
+
+.contenedor { background: var(--bg-tarjeta); padding: 24px; border-radius: var(--radio-borde); box-shadow: var(--sombra-suave); max-width: 500px; margin: 0 auto; width: 100%; }
+.btn-principal { width: 100%; padding: 16px; background-color: var(--color-primario); color: white; border: none; border-radius: var(--radio-borde); font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.3s; }
+.btn-principal:hover:not(:disabled) { background-color: #002244; }
+.btn-principal:disabled { background-color: #94a3b8; cursor: not-allowed; }
+.exito { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; padding: 14px; border-radius: var(--radio-borde); text-align: center; margin-top: 15px;}
+.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 14px; border-radius: var(--radio-borde); text-align: center; margin-top: 15px;}

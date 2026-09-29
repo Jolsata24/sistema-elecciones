@@ -5,8 +5,9 @@ session_start();
 header('Content-Type: application/json');
 require_once 'conexion.php';
 
-// Limpiar el DNI para evitar inyecciones
-$dni = filter_input(INPUT_POST, 'dni', FILTER_SANITIZE_STRING);
+// Limpiar el DNI usando trim y htmlspecialchars (seguro para versiones nuevas de PHP)
+$dni = trim($_POST['dni'] ?? '');
+$dni = htmlspecialchars($dni, ENT_QUOTES, 'UTF-8');
 $password = $_POST['password'] ?? '';
 
 if (empty($dni) || empty($password)) {
@@ -32,7 +33,12 @@ try {
         $_SESSION['nombres'] = $usuario['nombres'];
         $_SESSION['rol'] = $usuario['rol'];
 
-        echo json_encode(["status" => "success", "message" => "Acceso autorizado."]);
+        // Enviamos la respuesta de éxito junto con el rol del usuario
+        echo json_encode([
+            "status" => "success", 
+            "message" => "Acceso autorizado.",
+            "rol" => $usuario['rol']
+        ]);
     } else {
         http_response_code(401);
         echo json_encode(["status" => "error", "message" => "DNI o contraseña incorrectos."]);

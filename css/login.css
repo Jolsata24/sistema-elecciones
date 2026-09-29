@@ -1,0 +1,9 @@
+.logo-partido { width: 80px; height: auto; margin: 0 auto 15px auto; display: block; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+.pantalla-login { min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: var(--color-primario); }
+.pantalla-login .contenedor { margin: 0; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); border-top: 5px solid var(--color-secundario); }
+
+/* Inputs genéricos del formulario */
+.grupo-campo { margin-bottom: 20px; }
+label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem; }
+input { width: 100%; padding: 14px; border: 1px solid var(--borde); border-radius: var(--radio-borde); font-size: 16px; background: #f8fafc; transition: 0.3s; }
+input:focus { outline: none; border-color: var(--color-primario); background: var(--bg-tarjeta); box-shadow: 0 0 0 3px rgba(0,51,102,0.15); }

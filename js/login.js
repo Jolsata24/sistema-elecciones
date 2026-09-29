@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     formLogin.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        // Bloquear el botón mientras carga
         btnIngresar.disabled = true;
         btnIngresar.textContent = 'Verificando...';
         mensajeDiv.style.display = 'none';
@@ -21,20 +22,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (response.ok && result.status === 'success') {
-                // Si el login es exitoso, redirigimos al formulario de actas
-                window.location.href = 'index.php'; 
+                // Redirección inteligente basada en el rol que nos devuelve PHP
+                if (result.rol === 'admin') {
+                    window.location.href = 'dashboard.php'; // Al centro de cómputo
+                } else {
+                    window.location.href = 'index.php'; // Al formulario del celular
+                }
             } else {
+                // Credenciales incorrectas
                 mostrarMensaje(result.message || 'Credenciales incorrectas.', '#fee2e2', '#991b1b');
                 btnIngresar.disabled = false;
                 btnIngresar.textContent = 'Ingresar al Sistema';
             }
         } catch (error) {
+            // Error de servidor o de internet
             mostrarMensaje('Error de conexión. Revisa tu internet.', '#fee2e2', '#991b1b');
             btnIngresar.disabled = false;
             btnIngresar.textContent = 'Ingresar al Sistema';
         }
     });
 
+    // Función auxiliar para imprimir las alertas de error
     function mostrarMensaje(texto, bgColor, textColor) {
         mensajeDiv.textContent = texto;
         mensajeDiv.style.backgroundColor = bgColor;

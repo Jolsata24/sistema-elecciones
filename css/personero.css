@@ -1,0 +1,11 @@
+.cabecera { text-align: center; margin-bottom: 24px; padding-bottom: 15px; border-bottom: 2px solid var(--borde); }
+.cabecera h1 { color: var(--color-primario); font-size: 1.5rem; font-weight: 800; }
+.cabecera h2 { color: var(--color-secundario); font-size: 1.1rem; font-weight: 600; }
+.logo-partido { width: 60px; height: auto; margin: 0 auto 10px auto; display: block; }
+
+.grupo-campo { margin-bottom: 20px; }
+label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem; }
+input { width: 100%; padding: 14px; border: 1px solid var(--borde); border-radius: var(--radio-borde); font-size: 16px; }
+
+.grupo-votos { border: 1px solid var(--borde); padding: 20px; border-radius: var(--radio-borde); margin-bottom: 24px; background: #f8fafc; }
+.grupo-votos legend { font-weight: 700; color: var(--color-primario); padding: 0 10px; font-size: 1.05rem; }
